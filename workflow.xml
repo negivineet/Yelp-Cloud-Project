@@ -1,0 +1,96 @@
+<workflow-app xmlns = "uri:oozie:workflow:0.2" name = "cloudclass-apriori">
+   <start to = "Load_Join_Generate" />
+
+   <action name = "Load_Join_Generate">
+        <pig>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                <delete path="${nameNode}/user/${wf:user()}/${projectRoot}/pigoutput/myoutput"/>
+            </prepare>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+                <property>
+                    <name>mapred.compress.map.output</name>
+                    <value>true</value>
+                </property>
+            </configuration>
+            <script>loadJoinGenerate.pig</script>
+        </pig>
+
+        <ok to = "MapRed_Inverted_Index" />
+        <error to = "kill_job" />
+   </action>
+
+   <action name = "MapRed_Inverted_Index">
+    <map-reduce>
+           <job-tracker>${jobTracker}</job-tracker>
+           <name-node>${nameNode}</name-node>
+           <prepare>
+         <delete path="${nameNode}/user/${wf:user()}/${projectRoot}/output-data/"/>
+           </prepare>
+     
+       <configuration>
+         <property>
+           <name>mapred.mapper.new-api</name>
+           <value>true</value>
+         </property>
+         <property>
+           <name>mapred.reducer.new-api</name>
+           <value>true</value>
+         </property>
+         <property>
+           <name>mapred.job.queue.name</name>
+           <value>${queueName}</value>
+         </property>
+         <property>
+           <name>mapreduce.map.class</name>
+           <value>InvertedIndex.TaskMapper</value>
+         </property>
+         <property>
+           <name>mapreduce.reduce.class</name>
+           <value>InvertedIndex.TaskReducer</value>
+         </property>
+         <property>
+           <name>mapred.output.key.class</name>
+           <value>org.apache.hadoop.io.Text</value>
+         </property>
+         <property>
+           <name>mapred.output.value.class</name>
+           <value>org.apache.hadoop.io.Text</value>
+         </property>
+         <property>
+           <name>mapred.input.dir</name>
+           <value>/user/${wf:user()}/${projectRoot}/pigoutput/myoutput</value>
+         </property>
+         <property>
+           <name>mapred.output.dir</name>
+           <value>/user/${wf:user()}/${projectRoot}/output-data</value>
+         </property>
+        <property>
+                    <name>oozie.use.system.libpath</name>
+                    <value>false</value>
+                </property>
+                <property>
+                    <name>oozie.libpath</name>
+                    <value>"${nameNode}/user/${wf:user()}/${projectRoot}/lib"</value>
+                </property>
+       </configuration>
+      </map-reduce>
+
+        <ok to = "end" />
+        <error to = "kill_job" />
+   </action>
+
+
+
+   <kill name = "kill_job">
+      <message>Job failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+   </kill>
+
+   <end name = "end" />
+
+</workflow-app>
