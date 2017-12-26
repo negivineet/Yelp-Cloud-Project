@@ -1,0 +1,11 @@
+We have used Yelp Data set which can be downloaded from the following link:
+
+https://www.yelp.com/dataset OR
+https://www.yelp.com/dataset/download
+
+Download json file. We have used only following three files:
+business.json
+review.json
+user.json
+
+read the README.txt file for detailed information
